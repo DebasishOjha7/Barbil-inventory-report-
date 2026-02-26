@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Report Editor</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    padding:20px;
+    background:#f4f4f4;
+    overflow: visible !important;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+}
+
+h2{
+    text-align:center;
+    font-size:22px;
+    text-transform:uppercase;
+    margin-bottom:20px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:2px solid #000;
+    padding:10px;
+}
+
+th{
+    background:#9fb6cc;
+    text-align:center;
+    font-size:16px;
+}
+
+td:first-child{
+    text-align:left;
+}
+
+.device-col{
+    width:150px;
+    text-align:center;
+}
+
+.device-col input{
+    text-align:center;
+    font-weight:bold;
+    font-size:16px;
+}
+
+.action-col{
+    width:90px;
+    text-align:center;
+}
+
+input{
+    width:100%;
+    border:none;
+    font-size:15px;
+    outline:none;
+    background:transparent;
+}
+
+.total-row td{
+    font-weight:bold;
+    font-size:18px;
+    background:#e5e5e5;
+}
+
+button{
+    padding:4px 8px;
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    color:white;
+    font-weight:bold;
+}
+
+.btn-insert{ background:#28a745; }
+.btn-delete{ background:#dc3545; }
+.btn-save{
+    background:#007bff;
+    padding:10px 20px;
+    font-size:16px;
+}
+
+.controls{
+    text-align:center;
+    margin-top:20px;
+}
+
+/* Hide action column while exporting */
+.exporting .action-col{
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="report-area">
+
+<h2 contenteditable="true">
+INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
+</h2>
+
+<table id="inventory-table">
+
+<thead>
+<tr>
+<th>DETAILS</th>
+<th class="device-col">DEVICE</th>
+<th class="action-col">ACTION</th>
+</tr>
+</thead>
+
+<tbody id="inventory-body">
+<!-- rows will be injected -->
+</tbody>
+
+<tfoot>
+<tr class="total-row">
+<td>Total Sum of Telematics</td>
+<td id="total-sum" class="device-col">0</td>
+<td class="action-col"></td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+
+<div class="controls">
+<button class="btn-save" onclick="exportToJPG()">Save as JPG</button>
+</div>
+
+<script>
+/* ===== STANDARD DEFAULT ROWS ===== */
+const standardRows = [
+"In Hand Stock",
+"Lost Device",
+"Devices under Maintenance/Repair",
+"Damaged Device",
+"Devices In-Transit",
+"Devices at Barbil Plant",
+"Received from Dubuna Mines",
+"Reversed Logistic to Dubuna Mines",
+"Received from OMC Banspani",
+"Reversed Logistic to OMC Banspani",
+"Received from OMC Gandhamardhan",
+"Reversed Logistic to OMC Gandhamardhan",
+"Received from OMC Guali Iron ore Mines",
+"Reversed Logistic to OMC Guali Iron ore Mines",
+"Received from OMC Jilling",
+"Reversed Logistic to OMC Jilling",
+"Received from OMC Khandbandh",
+"Reversed Logistic to OMC Khandbandh",
+"Received from OMC Unchabali",
+"Reversed Logistic to OMC Unchabali"
+];
+
+window.onload = function(){
+    const tbody = document.getElementById("inventory-body");
+
+    standardRows.forEach(text=>{
+        tbody.appendChild(createRow(text));
+    });
+};
+
+function createRow(text=""){
+    const row = document.createElement("tr");
+    row.innerHTML = `
+        <td><input type="text" value="${text}"></td>
+        <td class="device-col">
+            <input type="number" class="count" value="0" oninput="calculateTotal()">
+        </td>
+        <td class="action-col">
+            <button class="btn-insert" onclick="insertRow(this)">+</button>
+            <button class="btn-delete" onclick="deleteRow(this)">×</button>
+        </td>
+    `;
+    return row;
+}
+
+function insertRow(btn){
+    const currentRow = btn.closest("tr");
+    const newRow = createRow("");
+    currentRow.after(newRow);
+}
+
+function deleteRow(btn){
+    btn.closest("tr").remove();
+    calculateTotal();
+}
+
+function calculateTotal(){
+    let total = 0;
+    document.querySelectorAll(".count").forEach(inp=>{
+        total += parseInt(inp.value) || 0;
+    });
+    document.getElementById("total-sum").innerText = total;
+}
+
+function exportToJPG(){
+    const element = document.getElementById("report-area");
+    element.classList.add("exporting");
+
+    html2canvas(element,{
+        scale:3,
+        scrollY:-window.scrollY,
+        windowWidth:document.documentElement.scrollWidth,
+        windowHeight:document.documentElement.scrollHeight
+    }).then(canvas=>{
+        const link = document.createElement("a");
+        link.download = "Inventory_Report.jpg";
+        link.href = canvas.toDataURL("image/jpeg",1.0);
+        link.click();
+        element.classList.remove("exporting");
+    });
+}
+</script>
+
+</body>
+</html>
