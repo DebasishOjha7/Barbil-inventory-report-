@@ -127,7 +127,6 @@ INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
 </thead>
 
 <tbody id="inventory-body">
-<!-- rows will be injected -->
 </tbody>
 
 <tfoot>
@@ -146,28 +145,21 @@ INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
 </div>
 
 <script>
-/* ===== STANDARD DEFAULT ROWS ===== */
+
+/* ===== UPDATED STANDARD DEFAULT ROWS ===== */
 const standardRows = [
-"In Hand Stock",
-"Lost Device",
-"Devices under Maintenance/Repair",
+"In hand stock",
+"Lost device",
 "Damaged Device",
-"Devices In-Transit",
-"Devices at Barbil Plant",
-"Received from Dubuna Mines",
-"Reversed Logistic to Dubuna Mines",
-"Received from OMC Banspani",
-"Reversed Logistic to OMC Banspani",
-"Received from OMC Gandhamardhan",
-"Reversed Logistic to OMC Gandhamardhan",
-"Received from OMC Guali Iron ore Mines",
-"Reversed Logistic to OMC Guali Iron ore Mines",
-"Received from OMC Jilling",
-"Reversed Logistic to OMC Jilling",
-"Received from OMC Khandbandh",
-"Reversed Logistic to OMC Khandbandh",
-"Received from OMC Unchabali",
-"Reversed Logistic to OMC Unchabali"
+"Devices in transit",
+"Devices received at Barbil Plant",
+"Installed at Dubuna Mines",
+"Installed at OMC Bansapani",
+"Installed at OMC Gandhamardhan",
+"Installed at OMC Guali",
+"Installed at OMC Jilling",
+"Installed at OMC Khandbandh",
+"Installed at OMC Unchabali"
 ];
 
 window.onload = function(){
@@ -176,6 +168,8 @@ window.onload = function(){
     standardRows.forEach(text=>{
         tbody.appendChild(createRow(text));
     });
+
+    calculateTotal();
 };
 
 function createRow(text=""){
@@ -229,6 +223,7 @@ function exportToJPG(){
         element.classList.remove("exporting");
     });
 }
+
 </script>
 
 </body>
