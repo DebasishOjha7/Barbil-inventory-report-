@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- CACHE DISABLE FIX -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
 <title>Inventory Report Editor</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -41,7 +47,6 @@ th,td{
 th{
     background:#9fb6cc;
     text-align:center;
-    font-size:16px;
 }
 
 .device-col{
@@ -54,10 +59,9 @@ th{
     text-align:center;
     font-weight:bold;
     font-size:18px;
-    padding:6px 0;
 }
 
-/* Remove number arrows */
+/* Remove arrows */
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{
     -webkit-appearance:none;
@@ -87,7 +91,7 @@ input{
 }
 
 button{
-    padding:4px 8px;
+    padding:6px 10px;
     border:none;
     border-radius:4px;
     cursor:pointer;
@@ -97,11 +101,8 @@ button{
 
 .btn-insert{ background:#28a745; }
 .btn-delete{ background:#dc3545; }
-.btn-save{
-    background:#007bff;
-    padding:10px 20px;
-    font-size:16px;
-}
+.btn-save{ background:#007bff; }
+.btn-reset{ background:#6c757d; }
 
 .controls{
     text-align:center;
@@ -117,11 +118,9 @@ button{
 <body>
 
 <div class="container" id="report-area">
-
-<h2 id="report-title" contenteditable="true"></h2>
+<h2 id="report-title"></h2>
 
 <table>
-
 <thead>
 <tr>
 <th>DETAILS</th>
@@ -139,37 +138,29 @@ button{
 <td class="action-col"></td>
 </tr>
 </tfoot>
-
 </table>
 </div>
 
 <div class="controls">
 <button class="btn-save" onclick="exportToJPG()">Save as JPG</button>
+<button class="btn-reset" onclick="clearData()">Clear Cache</button>
 </div>
 
 <script>
 
-/* ===== AUTO DATE + SHIFT ===== */
+/* ===== ALWAYS FRESH DATE ===== */
 function setAutoTitle(){
     const now = new Date();
-
     const day = String(now.getDate()).padStart(2,'0');
     const month = String(now.getMonth()+1).padStart(2,'0');
     const year = now.getFullYear();
 
     const hours = now.getHours();
-    let shift = "";
-
-    if(hours >= 6 && hours < 14){
-        shift = "A-SHIFT";
-    } else if(hours >= 14 && hours < 22){
-        shift = "B-SHIFT";
-    } else {
-        shift = "C-SHIFT";
-    }
+    let shift = hours>=6 && hours<14 ? "A-SHIFT" :
+                hours>=14 && hours<22 ? "B-SHIFT" : "C-SHIFT";
 
     document.getElementById("report-title").innerText =
-        `INVENTORY REPORT AS ON DTD:-${day}-${month}-${year} ${shift}`;
+    `INVENTORY REPORT AS ON DTD:-${day}-${month}-${year} ${shift}`;
 }
 
 /* ===== STANDARD ROWS ===== */
@@ -179,30 +170,21 @@ const standardRows = [
 "Damaged Device",
 "Devices in transit",
 "Devices received at Barbil Plant",
-"Stock device in Gandhamardhan",
-"Stock device in Guali",
-"Stock device in Jilling",
-"Stock device in Khandbandh",
-"Stock device in Unchabali"
+"Stock devices in Gandhamardhan",
+"Stock devices in Guali",
+"Stock devices in Jilling",
+"Stock devices in Khandbandh",
+"Stock devices in Unchabali"
 ];
 
-window.onload = function(){
-    setAutoTitle();
-
-    const tbody = document.getElementById("inventory-body");
-    standardRows.forEach(text=>{
-        tbody.appendChild(createRow(text));
-    });
-
-    calculateTotal();
-};
-
-function createRow(text=""){
+/* ===== CREATE ROW ===== */
+function createRow(text="", value=0){
     const row = document.createElement("tr");
     row.innerHTML = `
-        <td><input type="text" value="${text}"></td>
+        <td><input type="text" value="${text}" oninput="saveData()"></td>
         <td class="device-col">
-            <input type="number" class="count" value="0" min="0" oninput="calculateTotal()">
+            <input type="number" class="count" value="${value}" min="0"
+            oninput="calculateTotal(); saveData()">
         </td>
         <td class="action-col">
             <button class="btn-insert" onclick="insertRow(this)">+</button>
@@ -212,16 +194,19 @@ function createRow(text=""){
     return row;
 }
 
+/* ===== INSERT DELETE ===== */
 function insertRow(btn){
-    const currentRow = btn.closest("tr");
-    currentRow.after(createRow(""));
+    btn.closest("tr").after(createRow(""));
+    saveData();
 }
 
 function deleteRow(btn){
     btn.closest("tr").remove();
     calculateTotal();
+    saveData();
 }
 
+/* ===== TOTAL ===== */
 function calculateTotal(){
     let total = 0;
     document.querySelectorAll(".count").forEach(inp=>{
@@ -230,6 +215,47 @@ function calculateTotal(){
     document.getElementById("total-sum").innerText = total;
 }
 
+/* ===== SAVE ===== */
+function saveData(){
+    const rows = [];
+    document.querySelectorAll("#inventory-body tr").forEach(row=>{
+        const text = row.querySelector("td input[type=text]").value;
+        const value = row.querySelector(".count").value;
+        rows.push({text,value});
+    });
+    localStorage.setItem("inventoryData", JSON.stringify(rows));
+}
+
+/* ===== LOAD ===== */
+function loadData(){
+    setAutoTitle(); // ALWAYS update date fresh
+
+    const saved = localStorage.getItem("inventoryData");
+    const tbody = document.getElementById("inventory-body");
+    tbody.innerHTML = "";
+
+    if(saved){
+        JSON.parse(saved).forEach(r=>{
+            tbody.appendChild(createRow(r.text, r.value));
+        });
+    } else {
+        standardRows.forEach(text=>{
+            tbody.appendChild(createRow(text,0));
+        });
+    }
+
+    calculateTotal();
+}
+
+/* ===== CLEAR CACHE ===== */
+function clearData(){
+    if(confirm("Clear saved inventory data?")){
+        localStorage.removeItem("inventoryData");
+        location.reload(true);
+    }
+}
+
+/* ===== EXPORT ===== */
 function exportToJPG(){
     const element = document.getElementById("report-area");
     element.classList.add("exporting");
@@ -242,6 +268,8 @@ function exportToJPG(){
         element.classList.remove("exporting");
     });
 }
+
+window.onload = loadData;
 
 </script>
 
