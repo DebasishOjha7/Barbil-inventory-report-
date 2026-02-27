@@ -12,7 +12,6 @@ body{
     font-family: Arial, sans-serif;
     padding:20px;
     background:#f4f4f4;
-    overflow: visible !important;
 }
 
 .container{
@@ -45,19 +44,27 @@ th{
     font-size:16px;
 }
 
-td:first-child{
-    text-align:left;
-}
-
 .device-col{
     width:150px;
     text-align:center;
 }
 
 .device-col input{
+    width:100%;
     text-align:center;
     font-weight:bold;
-    font-size:16px;
+    font-size:18px;
+    padding:6px 0;
+}
+
+/* Remove number arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+}
+input[type=number]{
+    -moz-appearance:textfield;
 }
 
 .action-col{
@@ -101,7 +108,6 @@ button{
     margin-top:20px;
 }
 
-/* Hide action column while exporting */
 .exporting .action-col{
     display:none;
 }
@@ -112,11 +118,9 @@ button{
 
 <div class="container" id="report-area">
 
-<h2 contenteditable="true">
-INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
-</h2>
+<h2 id="report-title" contenteditable="true"></h2>
 
-<table id="inventory-table">
+<table>
 
 <thead>
 <tr>
@@ -126,8 +130,7 @@ INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
 </tr>
 </thead>
 
-<tbody id="inventory-body">
-</tbody>
+<tbody id="inventory-body"></tbody>
 
 <tfoot>
 <tr class="total-row">
@@ -146,7 +149,30 @@ INVENTORY REPORT AS ON DTD:-23-02-2026 A-SHIFT
 
 <script>
 
-/* ===== FINAL UPDATED STANDARD ROWS ===== */
+/* ===== AUTO DATE + SHIFT ===== */
+function setAutoTitle(){
+    const now = new Date();
+
+    const day = String(now.getDate()).padStart(2,'0');
+    const month = String(now.getMonth()+1).padStart(2,'0');
+    const year = now.getFullYear();
+
+    const hours = now.getHours();
+    let shift = "";
+
+    if(hours >= 6 && hours < 14){
+        shift = "A-SHIFT";
+    } else if(hours >= 14 && hours < 22){
+        shift = "B-SHIFT";
+    } else {
+        shift = "C-SHIFT";
+    }
+
+    document.getElementById("report-title").innerText =
+        `INVENTORY REPORT AS ON DTD:-${day}-${month}-${year} ${shift}`;
+}
+
+/* ===== STANDARD ROWS ===== */
 const standardRows = [
 "In hand stock",
 "Lost device",
@@ -161,8 +187,9 @@ const standardRows = [
 ];
 
 window.onload = function(){
-    const tbody = document.getElementById("inventory-body");
+    setAutoTitle();
 
+    const tbody = document.getElementById("inventory-body");
     standardRows.forEach(text=>{
         tbody.appendChild(createRow(text));
     });
@@ -175,7 +202,7 @@ function createRow(text=""){
     row.innerHTML = `
         <td><input type="text" value="${text}"></td>
         <td class="device-col">
-            <input type="number" class="count" value="0" oninput="calculateTotal()">
+            <input type="number" class="count" value="0" min="0" oninput="calculateTotal()">
         </td>
         <td class="action-col">
             <button class="btn-insert" onclick="insertRow(this)">+</button>
@@ -187,8 +214,7 @@ function createRow(text=""){
 
 function insertRow(btn){
     const currentRow = btn.closest("tr");
-    const newRow = createRow("");
-    currentRow.after(newRow);
+    currentRow.after(createRow(""));
 }
 
 function deleteRow(btn){
@@ -208,12 +234,7 @@ function exportToJPG(){
     const element = document.getElementById("report-area");
     element.classList.add("exporting");
 
-    html2canvas(element,{
-        scale:3,
-        scrollY:-window.scrollY,
-        windowWidth:document.documentElement.scrollWidth,
-        windowHeight:document.documentElement.scrollHeight
-    }).then(canvas=>{
+    html2canvas(element,{ scale:3 }).then(canvas=>{
         const link = document.createElement("a");
         link.download = "Inventory_Report.jpg";
         link.href = canvas.toDataURL("image/jpeg",1.0);
